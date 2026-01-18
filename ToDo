@@ -1,0 +1,55 @@
+
+
+
+# TODO: Design & Strategy Expansion (Top Priority)
+
+## Base Class-Based Strategies for Extensibility
+- [ ] Refactor nano-graphrag to use base class-based strategies for storage, embedding, LLM, and chunking, similar to nano-vectordb.
+- [ ] Ensure all major components (storage, embedding, LLM, chunking) have clear abstract base classes/interfaces.
+- [ ] Document and enforce plug-and-play extensibility for new backends.
+
+## Link NanoVectorDB via Storage Strategy
+- [ ] Implement a NanoVectorDB storage strategy in nano-graphrag that inherits from the new storage base class.
+- [ ] Ensure seamless integration and swappability with other storage backends.
+
+# TODO: Python → C++ Parity Gaps (Pipeline Blockers First)
+
+## Pipeline-Blocking Gaps (Top Priority)
+
+### Batch Operations & Async/Callback Support
+- [ ] Add async-like callback methods (index_start_callback, index_done_callback, query_done_callback) to C++ StorageNameSpace, matching Python's structure and intent.
+- [ ] Add support for batch get_by_ids and batch upsert in C++ BaseKVStorage/JsonKVStorage if not present.
+- [ ] Implement batch methods: node_degrees_batch, edge_degrees_batch, get_nodes_batch in C++ BaseGraphStorage if missing.
+- [ ] Add clustering, community_schema, and embed_nodes methods to C++ BaseGraphStorage to match Python.
+- [ ] Ensure upsert_nodes_batch and upsert_edges_batch are present and match Python's batch logic in C++ BaseGraphStorage.
+- [ ] Add meta_fields and embedding_func members to C++ BaseVectorStorage if missing.
+- [ ] Ensure query and upsert methods in C++ BaseVectorStorage support batch and async-like operations as in Python.
+
+### Utility/Data Structures
+- [ ] Add or update types and data structures (QueryParam, TextChunkSchema, CommunitySchema, etc.) in C++ (Types.hpp, QueryParam.hpp) to match Python's definitions.
+
+### Error Handling & State Management
+- [ ] Review and align error handling and return types for all_keys, get_by_id, get_by_ids, filter_keys, upsert, drop in C++ BaseKVStorage/JsonKVStorage.
+- [ ] Ensure private members and state management (e.g., data_) in C++ JsonKVStorage are robust and match Python's flexibility.
+
+### Advanced Graph/Storage Methods
+- [ ] Add or update methods for edge/node management to match Python's NetworkXStorage, especially for batch and advanced graph operations in C++ InMemoryGraphStorage.
+
+---
+
+## Remaining Parity Gaps
+
+### RestClient (Python: none → C++: RestClient.hpp)
+- [ ] Port any REST/HTTP client logic from Python utilities or add missing features to C++ RestClient to match Python's ecosystem flexibility.
+
+### EmbeddingFunc (Python: _utils.py → C++: Embedding.hpp)
+- [ ] Add async/callback support and attribute wrapping to C++ EmbeddingFunc to match Python's decorator and async usage.
+
+### Prompts (Python: prompt.py → C++: Prompts.hpp)
+- [ ] Port all prompt templates and constants from Python to C++ if not already present.
+
+### LLM/Chunking (Python: _llm.py, _op.py → C++: llm/OpenAI.hpp, ops/Chunking.hpp)
+- [ ] Port LLM and chunking logic from Python to C++ as needed for feature parity.
+
+---
+- Review all TODOs and check off as each gap is addressed.

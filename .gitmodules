@@ -1,3 +1,6 @@
 [submodule "external/nano-vectordb-cpp"]
 	path = external/nano-vectordb-cpp
 	url = https://github.com/KalanaRatnayake/nano-vectordb-cpp
+[submodule "external/cpp-tiktoken"]
+	path = external/cpp-tiktoken
+	url = https://github.com/gh-markt/cpp-tiktoken

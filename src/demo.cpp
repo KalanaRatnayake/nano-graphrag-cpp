@@ -1,30 +1,35 @@
 #include <iostream>
 #include <vector>
+#include <cstdlib>
 
 #include "nano_graphrag/GraphRAG.hpp"
-#include "nano_graphrag/Embedding.hpp"
+#include "nano_graphrag/embedding/factory.hpp"
+#include "nano_graphrag/llm/factory.hpp"
+#include "nano_graphrag/utils/Types.hpp"
 
 int main(int argc, char** argv)
 {
   using namespace nano_graphrag;
   GraphRAG rag("./nano_cache");
 
-  // Build OpenAI embedding via client (synchronous wrapper)
-  OpenAIClient client;
-
-  // Set API key from environment if available
   const char* api_key = std::getenv("OPENAI_API_KEY");
+
+  // Setup strategies
+  std::unique_ptr<nano_graphrag::IEmbeddingStrategy> emb_up;
   if (api_key)
+    emb_up = nano_graphrag::create_embedding_strategy(nano_graphrag::EmbeddingStrategyType::OpenAI);
+  else
+    emb_up = nano_graphrag::create_embedding_strategy(nano_graphrag::EmbeddingStrategyType::Hash);
+  std::shared_ptr<nano_graphrag::IEmbeddingStrategy> emb(std::move(emb_up));
+  rag.set_embedding_strategy(emb);
+
+  // LLM strategy is optional for context-only mode. If API key is present, set it up.
   {
-    rag.set_openai_api_key(api_key);
-    client.set_api_key(api_key);
+    auto llm_up = nano_graphrag::create_llm_strategy(nano_graphrag::LLMStrategyType::OpenAI);
+    std::shared_ptr<nano_graphrag::ILLMStrategy> llm(std::move(llm_up));
+    rag.set_llm_strategy(llm);
   }
 
-  EmbeddingFunc emb{ 1536, 8192, [&client](const std::vector<std::string>& texts) {
-                      return client.embeddings("text-embedding-3-small", texts);
-                    } };
-                    
-  rag.set_embedding_func(emb);
   rag.enable_naive(true);
 
   rag.insert({
@@ -39,7 +44,7 @@ int main(int argc, char** argv)
   qp.naive_max_token_for_text_unit = 1024;  // cap context size
   if (!api_key)
   {
-    // If no API key, skip network and just print context
+    // Offline demo path: return context only
     qp.only_need_context = true;
   }
   std::string question = "What is NanoGraphRAG?";

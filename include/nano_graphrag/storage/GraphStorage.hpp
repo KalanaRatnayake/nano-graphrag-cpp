@@ -8,12 +8,19 @@
 #include <optional>
 #include <algorithm>
 
-#include "nano_graphrag/storage/Base.hpp"
-#include "nano_graphrag/Types.hpp"
+#include "nano_graphrag/storage/base.hpp"
+#include "nano_graphrag/utils/Types.hpp"
 
 namespace nano_graphrag
 {
 
+/**
+ * @brief In-memory graph storage backend.
+ *
+ * Stores nodes and undirected edges with property maps, maintains adjacency,
+ * and provides simple clustering via connected components. Intended for
+ * lightweight graph operations without external dependencies.
+ */
 class InMemoryGraphStorage : public BaseGraphStorage
 {
 public:
@@ -24,17 +31,20 @@ public:
     this->global_config = cfg;
   }
 
+  /** Check if a node exists. */
   bool has_node(const std::string& node_id) const override
   {
     return nodes_.count(node_id) > 0;
   }
 
+  /** Check if an undirected edge exists between nodes s and t. */
   bool has_edge(const std::string& s, const std::string& t) const override
   {
     auto k = canonical_edge_key_str(s, t);
     return edges_.count(k) > 0;
   }
 
+  /** Number of neighbors of the node. */
   int node_degree(const std::string& node_id) const override
   {
     auto it = adjacency_.find(node_id);
@@ -43,11 +53,13 @@ public:
     return static_cast<int>(it->second.size());
   }
 
+  /** Heuristic edge degree: sum of endpoint degrees. */
   int edge_degree(const std::string& s, const std::string& t) const override
   {
     return node_degree(s) + node_degree(t);
   }
 
+  /** Retrieve node properties, if present. */
   std::optional<std::unordered_map<std::string, std::string>>
   get_node(const std::string& node_id) const override
   {
@@ -57,6 +69,7 @@ public:
     return it->second;
   }
 
+  /** Retrieve edge properties for undirected pair {s,t}, if present. */
   std::optional<std::unordered_map<std::string, std::string>> get_edge(const std::string& s,
                                                                        const std::string& t) const override
   {
@@ -67,6 +80,7 @@ public:
     return it->second;
   }
 
+  /** List incident edges (as pairs) for a node. */
   std::vector<std::pair<std::string, std::string>> get_node_edges(const std::string& node_id) const override
   {
     std::vector<std::pair<std::string, std::string>> out;
@@ -78,6 +92,7 @@ public:
     return out;
   }
 
+  /** Upsert node and its properties. */
   void upsert_node(const std::string& node_id,
                    const std::unordered_map<std::string, std::string>& node_data) override
   {
@@ -85,6 +100,7 @@ public:
     adjacency_.emplace(node_id, std::unordered_set<std::string>{});
   }
 
+  /** Batch upsert nodes. */
   void upsert_nodes_batch(
       const std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>>& nodes_data)
       override
@@ -93,6 +109,7 @@ public:
       upsert_node(kv.first, kv.second);
   }
 
+  /** Upsert undirected edge and its properties. */
   void upsert_edge(const std::string& s, const std::string& t,
                    const std::unordered_map<std::string, std::string>& edge_data) override
   {
@@ -102,6 +119,7 @@ public:
     adjacency_[t].insert(s);
   }
 
+  /** Batch upsert edges. */
   void upsert_edges_batch(
       const std::vector<std::tuple<std::string, std::string, std::unordered_map<std::string, std::string>>>&
           edges_data) override
@@ -110,6 +128,12 @@ public:
       upsert_edge(std::get<0>(e), std::get<1>(e), std::get<2>(e));
   }
 
+  /**
+   * @brief Perform clustering and annotate nodes.
+   *
+   * Placeholder implementation: clusters by connected components (BFS) and
+   * writes a `clusters` attribute on nodes as a simple JSON string.
+   */
   void clustering(const std::string& algorithm) override
   {
     // Simple placeholder: mark all nodes level 0 cluster by connected components
@@ -141,6 +165,12 @@ public:
     }
   }
 
+  /**
+   * @brief Construct a simple community schema by grouping nodes by cluster id.
+   *
+   * Edges are canonicalized and uniqued; `occurrence` is derived from chunk_ids
+   * count if present.
+   */
   std::unordered_map<std::string, SingleCommunity> community_schema() const override
   {
     std::unordered_map<std::string, SingleCommunity> out;
